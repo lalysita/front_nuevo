@@ -4,6 +4,7 @@ import { PerfilComponent } from './components/perfil/perfil.component';
 import { CategoriaComponent } from './inventario/components/categoria/categoria.component';
 import { AppLayoutComponent } from './layout/app.layout.component';
 import { ProductoComponent } from './inventario/components/producto/producto.component';
+import { LayoutComponent } from './layout/layout.component';
 
 const routes: Routes = [
   {

@@ -1,118 +1,139 @@
-import { Component, CUSTOM_ELEMENTS_SCHEMA,OnInit, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CategoriaService } from '../../services/categoria.service';
-import { FormControl, FormGroup } from '@angular/forms';
-import Swal from 'sweetalert2';
+import { FormGroup, FormControl } from '@angular/forms';
+import Swal from 'sweetalert2'
 
-interface Categoria{
+interface Categoria {
   id: number;
   nombre: string;
-  detalle: string
+  detalle: string;
 }
 
 @Component({
   selector: 'app-categoria',
   templateUrl: './categoria.component.html',
-  styleUrl: './categoria.component.scss',
-  
+  styleUrl: './categoria.component.scss'
 })
 export class CategoriaComponent implements OnInit {
 
   private categoriaService = inject(CategoriaService)
-  categorias: Categoria[] = []
-  dialog_visible: boolean=false;
-  categoria_id:number=-1;
-  categoriaForm=new FormGroup({
-    nombre:new FormControl(''),
+  categorias: Categoria[] = [];
+  visible: boolean = false;
+  categoria_id: number = -1;
+  categoriaForm = new FormGroup({
+    nombre: new FormControl(''),
     detalle: new FormControl('')
   });
 
-  ngOnInit():void{
-    this.getCategorias()
+  ngOnInit(): void {
+    this.getCategoria()
   }
-  getCategorias(){
+  getCategoria() {
     this.categoriaService.funlistar().subscribe(
-      (res:any)=>{
-        this.categorias = res
+      (res: any) => {
+        this.categorias = res;
       },
-      (error:any)=>{
-        console.log(error)
-      }
-    )
-}
-mostrarDialog(){
-this.dialog_visible=true
-}
-guardarCategoria(){
-  if(this.categoria_id>0)
-    {
-    this.categoriaService.funModificar(this.categoria_id, this.categoriaForm.value).subscribe
-      (
-        (res:any)=>{
-          this.dialog_visible=false;
-          this.getCategorias();
-          this.categoria_id=-1;
-          this.alerta("Actualizado","la categoria se modifico con exito","success")
-        },
-        (error:any)=>{
-          this.alerta("Error Al Actualizar","verifica los datos","error")
-        }
-  
-      );
-      this.categoriaForm.reset();
-    }
-  else
-    {
-      this.categoriaService.funGuardar(this.categoriaForm.value).subscribe 
-      (
-        (res:any)=>
-          {
-          this.dialog_visible=false
-          this.getCategorias();
-          this.alerta("Registrado","La categoria se creo con exito","success")
-        }
-      ),
-        (error:any)=>{
-          this.alerta("Error al registro","verifica los datos","error")
-      
-        }
-        this.categoriaForm.reset();   
-    }
-}
-
-editarCategoria(cat:Categoria){
-  this.dialog_visible=true
-  this.categoria_id=cat.id
-  this.categoriaForm.setValue({nombre: cat.nombre,detalle: cat.detalle})
-}
-eliminarCategoria(cat:Categoria){
-Swal.fire({
-  title: '¿Estas seguro de eliminar la categoria?',
-  text:"una vez eliminada no se podra recuperar!",
-  icon:"warning",
-  showCancelButton: true,
-  confirmButtonColor:"#3085d6",
-  cancelButtonColor:"#d33",
-  confirmButtonText: "Si, eliminarla",
-}).then((result)=>{
-  if(result.isConfirmed) {
-    this.categoriaService.funEliminar(cat.id).subscribe(
-      (res:any)=>{
-       this.alerta("Eliminado","Categoria eliminaa","success")
-
-        this.getCategorias();
-        this.categoria_id=-1
-      },
-      (error:any)=>{
-        this.alerta("Error!","Erro al intentar eliminar.","success")
+      (err: any) => {
+        console.log(err);
       }
     )
   }
-});
-}
-alerta(title:string, text:string, icon:'success'|'error'|'info'|'question'){
-  Swal.fire({title,text,icon});
-  //title:title
-  //text:text 
-  //icon.icon
-}
+
+  mostrarDialog() {
+    this.visible = true
+  }
+
+  guardarCategoria() {
+    if (this.categoriaForm.valid) {
+      if (this.categoria_id !== -1) { // Si hay un ID válido, modificar
+        this.categoriaService.funModificar(this.categoria_id, this.categoriaForm.value).subscribe(
+          (res: any) => {
+            this.visible = false;
+            this.getCategoria(); // Recargar las categorías después de guardar
+            this.categoria_id = -1; // Resetear el ID
+            Swal.fire({
+              title: "En hora buena",
+              text: "La categoría se modificó con éxito!",
+              icon: "success"
+            });
+          },
+          (err: any) => {
+            console.error('Error al modificar la categoría', err);
+          }
+        );
+      } else { // Si no hay un ID válido, crear una nueva categoría
+        this.categoriaService.funGuardar(this.categoriaForm.value).subscribe(
+          (res: any) => {
+            this.visible = false;
+            this.getCategoria(); // Recargar las categorías después de guardar
+            Swal.fire({
+              title: "Registrado",
+              text: "La categoría se creó con éxito!",
+              icon: "success"
+            });
+          },
+          (error: any) => {
+            console.error('Error al crear la categoría', error);
+          }
+        );
+      }
+      this.categoriaForm.reset(); // Resetear el formulario después de guardar
+    } else {
+      Swal.fire({
+        title: "Formulario inválido",
+        text: "Por favor completa todos los campos.",
+        icon: "error"
+      });
+    }
+  }
+
+
+  editarCategoria(cat: Categoria) {
+    this.visible = true
+    this.categoria_id = cat.id
+    this.categoriaForm.setValue({ nombre: cat.nombre, detalle: cat.detalle })
+  }
+
+  eliminarCategoria(cat: Categoria) {
+    Swal.fire({
+      title: '¿Estás seguro de eliminar la categoría?',
+      text: 'No podrás recuperarla después de eliminarla',
+      icon: 'warning',
+
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Si.eliminar!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.categoriaService.funEliminar(cat.id).subscribe(
+          (res: any) => {
+            Swal.fire({
+              title: "Eliminado",
+              text: "La categoría se eliminó",
+              icon: "success"
+            });
+            this.getCategoria();
+            this.categoria_id = -1
+          },
+          (error: any) => {
+            Swal.fire({
+              title: "Error",
+              text: "No se pudo eliminar la categoría",
+              icon: "error"
+            })
+          }
+        )
+      }
+    })
+  }
+
+  alerta(title: string, text: string, icon: 'success' | 'error' | 'info' | 'question') {
+    Swal.fire({
+      title, text, icon
+      //title:title,
+      //text:text,
+      //icon:icon
+    })
+  }
+
 }
